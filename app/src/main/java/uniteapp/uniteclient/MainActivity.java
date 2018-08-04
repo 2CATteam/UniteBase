@@ -202,4 +202,10 @@ public class MainActivity extends AppCompatActivity implements DownloadCallback<
         fab.setLayoutParams(new LinearLayout.LayoutParams(this));
         layout.addView(fab);
     }*/
+
+    //TODO: Update from GPS
+    //TODO: Allow for swiping to delete
+    //TODO: Persistent storage
+    //TODO: Server-side notifications
+    //TODO: Fork to student-teacher versions
 }
