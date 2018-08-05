@@ -21,35 +21,53 @@
         app:layout_constraintTop_toTopOf="parent" />
 
 
-    <ScrollView
+    <LinearLayout
+        android:id="@+id/bottomBox"
         android:layout_width="0dp"
-        android:layout_height="0dp"
-        app:layout_constraintBottom_toTopOf="@+id/addButton"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/topLabel">
-
-        <LinearLayout
-            android:id="@+id/placeButtonsHere"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:orientation="vertical" >
-
-        </LinearLayout>
-    </ScrollView>
-
-    <Button
-        android:id="@+id/addButton"
-        style="@android:style/Animation.Dialog"
-        android:layout_width="0dp"
-        android:layout_height="wrap_content"
-        android:background="#00FF00"
-        android:text="@string/add_text"
-        android:textAlignment="center"
-        android:textAllCaps="false"
-        android:textSize="18sp"
+        android:layout_height="50dp"
+        android:orientation="horizontal"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent" />
+        app:layout_constraintHorizontal_bias="0.0"
+        app:layout_constraintStart_toStartOf="parent">
+
+        <Button
+            android:id="@+id/addButton"
+            style="@android:style/Animation.Dialog"
+            android:layout_width="wrap_content"
+            android:layout_height="50dp"
+            android:layout_weight=".5"
+            android:background="@drawable/add_background"
+            android:text="@string/add_text"
+            android:textAlignment="center"
+            android:textAllCaps="false"
+            android:textSize="18sp"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintHorizontal_bias="0.0"
+            app:layout_constraintStart_toStartOf="parent" />
+
+        <Button
+            android:id="@+id/refreshButton"
+            style="@android:style/Animation.Dialog"
+            android:layout_width="wrap_content"
+            android:layout_height="50dp"
+            android:layout_weight=".5"
+            android:background="@drawable/refresh_background"
+            android:text="@string/refresh_text"
+            android:textAlignment="center"
+            android:textAllCaps="false"
+            android:textSize="18sp" />
+    </LinearLayout>
+
+    <android.support.v7.widget.RecyclerView
+        android:id="@+id/placeButtonsHere"
+        android:layout_width="0dp"
+        android:layout_height="0dp"
+        android:scrollbars="vertical"
+        app:layout_constraintBottom_toTopOf="@+id/bottomBox"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="@+id/topLabel"
+        app:layout_constraintTop_toBottomOf="@+id/topLabel" />
 
 </android.support.constraint.ConstraintLayout>

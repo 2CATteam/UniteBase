@@ -4,12 +4,24 @@ import android.content.Context;
 import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
 import android.os.Bundle;
+import android.support.annotation.NonNull;
 import android.support.v4.app.DialogFragment;
+import android.support.v4.content.ContextCompat;
 import android.support.v7.app.AppCompatActivity;
+import android.support.v7.widget.LinearLayoutManager;
+import android.support.v7.widget.RecyclerView;
+import android.support.v7.widget.helper.ItemTouchHelper;
+import android.util.Log;
 import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.LinearLayout;
+import android.widget.Toast;
+
+import com.google.android.gms.tasks.OnCompleteListener;
+import com.google.android.gms.tasks.Task;
+import com.google.firebase.messaging.FirebaseMessaging;
+import com.google.firebase.messaging.FirebaseMessagingService;
 
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -17,10 +29,11 @@ import org.json.JSONObject;
 import java.util.ArrayList;
 import java.util.Iterator;
 
-public class MainActivity extends AppCompatActivity implements DownloadCallback<JSONObject>, AddDialogFragment.AddDialogListener {
+public class MainActivity extends AppCompatActivity implements DownloadCallback<JSONObject>, AddDialogFragment.AddDialogListener, RecyclerItemTouchHelper.RecyclerItemTouchHelperListener {
 
-    ArrayList<String> toDos;
+    ArrayList<Button> toDos;
     //HashMap<String, Boolean> toDoStates;
+    ButtonAdapter adapter;
 
     private NetworkFragment mNetworkFragment;
 
@@ -31,16 +44,38 @@ public class MainActivity extends AppCompatActivity implements DownloadCallback<
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-        toDos = new ArrayList<String>();//
+        toDos = new ArrayList<Button>();//
         mNetworkFragment = NetworkFragment.getInstance(getSupportFragmentManager(), DownloadParameters.url);
 
         Button toAdd = findViewById(R.id.addButton);
+        toAdd.setTextColor(0xFFFFFFFF);
         toAdd.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
                 showNoticeDialog();
             }
         });
+        Button toRefresh = findViewById(R.id.refreshButton);
+        toRefresh.setTextColor(0xFFFFFFFF);
+        toRefresh.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                doGet();
+            }
+        });
+
+        RecyclerView toLayout = findViewById(R.id.placeButtonsHere);
+        toLayout.setHasFixedSize(true);
+        LinearLayoutManager layoutManager = new LinearLayoutManager(this);
+        layoutManager.setOrientation(LinearLayoutManager.VERTICAL);
+        toLayout.setLayoutManager(layoutManager);
+        adapter = new ButtonAdapter(new ArrayList<Button>());
+        toLayout.setAdapter(adapter);
+
+        ItemTouchHelper.SimpleCallback callback = new RecyclerItemTouchHelper(0, ItemTouchHelper.LEFT, this);
+        new ItemTouchHelper(callback).attachToRecyclerView(toLayout);
+
+        FirebaseMessaging.getInstance().subscribeToTopic("student");
 
         doGet();
 
@@ -92,6 +127,7 @@ public class MainActivity extends AppCompatActivity implements DownloadCallback<
     @Override
     public void updateFromDownload(JSONObject result) {
         Iterator<String> keys = result.keys();
+        ArrayList<String> toDos = new ArrayList<String>();
         while (keys.hasNext())
         {
             String key = keys.next();
@@ -100,7 +136,6 @@ public class MainActivity extends AppCompatActivity implements DownloadCallback<
                 toDos.add(key);
             }
         }
-        clearButtons();
         for (String key: toDos)
         {
             try {
@@ -114,12 +149,14 @@ public class MainActivity extends AppCompatActivity implements DownloadCallback<
     public void makeButton(final String toDo, final Boolean isDone)
     {
         Button toAdd = new Button(this);
+        toAdd.setTextColor(0xFFFFFFFF);
         toAdd.setText(toDo);
+        toAdd.setTransformationMethod(null);
         if (isDone)
         {
-            toAdd.setBackgroundColor(0xFF00FF00);
+            toAdd.setBackground(ContextCompat.getDrawable(this, R.drawable.todo_done));
         } else {
-            toAdd.setBackgroundColor(0xFFFF4444);
+            toAdd.setBackground(ContextCompat.getDrawable(this, R.drawable.todo_pending));
         }
         toAdd.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -131,8 +168,7 @@ public class MainActivity extends AppCompatActivity implements DownloadCallback<
                 doPut(keys, values);
             }
         });
-        LinearLayout layout = findViewById(R.id.placeButtonsHere);
-        layout.addView(toAdd);
+        adapter.addItem(toAdd);
     }
 
     @Override
@@ -177,11 +213,6 @@ public class MainActivity extends AppCompatActivity implements DownloadCallback<
         }
     }
 
-    public void clearButtons() {
-        LinearLayout layout = findViewById(R.id.placeButtonsHere);
-        layout.removeAllViews();
-    }
-
     @Override
     public void onDialogPositiveClick(String toAdd) {
         ArrayList<String> keys = new ArrayList<>();
@@ -197,15 +228,17 @@ public class MainActivity extends AppCompatActivity implements DownloadCallback<
         dialog.show(getSupportFragmentManager(), "AddDialogFragment");
     }
 
-    /*private void createButton(LinearLayout layout) {
-        FloatingActionButton fab = new FloatingActionButton(this);
-        fab.setLayoutParams(new LinearLayout.LayoutParams(this));
-        layout.addView(fab);
-    }*/
+    @Override
+    public void onSwiped(RecyclerView.ViewHolder viewHolder, int direction, int position) {
+        adapter.removeItem(viewHolder.getAdapterPosition());
+        ArrayList<String> toDelete = new ArrayList<String>();
+        toDelete.add((((Button) ((ButtonAdapter.ViewHolder) viewHolder).layout.getChildAt(0)).getText()).toString());
+        ArrayList<Boolean> trues = new ArrayList<Boolean>();
+        trues.add(true);
+        doDelete(toDelete, trues);
+    }
 
     //TODO: Update from GPS
-    //TODO: Allow for swiping to delete
-    //TODO: Persistent storage
     //TODO: Server-side notifications
     //TODO: Fork to student-teacher versions
 }
