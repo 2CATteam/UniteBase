@@ -28,7 +28,7 @@
 
         <service android:name="uniteapp.uniteclient.GeofenceTransitionsIntentService" />
         <service
-            android:name=".notificationConn"
+            android:name="uniteapp.uniteclient.notificationConn"
             android:enabled="true"
             android:exported="true"><intent-filter>
             <action android:name="com.google.firebase.MESSAGING_EVENT"/>

@@ -1,6 +1,6 @@
 package uniteapp.uniteclient;
 
-import android.annotation.SuppressLint;
+import android.Manifest;
 import android.app.PendingIntent;
 import android.content.Context;
 import android.content.Intent;
@@ -8,6 +8,7 @@ import android.content.pm.PackageManager;
 import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
 import android.os.Bundle;
+import android.os.Handler;
 import android.support.annotation.NonNull;
 import android.support.v4.app.ActivityCompat;
 import android.support.v4.app.DialogFragment;
@@ -19,28 +20,25 @@ import android.support.v7.widget.helper.ItemTouchHelper;
 import android.util.Log;
 import android.view.View;
 import android.widget.Button;
-import android.widget.EditText;
-import android.widget.LinearLayout;
-import android.widget.Toast;
 
 import com.google.android.gms.location.Geofence;
 import com.google.android.gms.location.GeofencingClient;
 import com.google.android.gms.location.GeofencingRequest;
 import com.google.android.gms.location.LocationServices;
-import com.google.android.gms.tasks.OnCompleteListener;
 import com.google.android.gms.tasks.OnFailureListener;
 import com.google.android.gms.tasks.OnSuccessListener;
-import com.google.android.gms.tasks.Task;
 import com.google.firebase.messaging.FirebaseMessaging;
-import com.google.firebase.messaging.FirebaseMessagingService;
 
 import org.json.JSONException;
 import org.json.JSONObject;
 
+import java.lang.ref.WeakReference;
 import java.util.ArrayList;
 import java.util.Iterator;
 
 public class MainActivity extends AppCompatActivity implements DownloadCallback<JSONObject>, AddDialogFragment.AddDialogListener, RecyclerItemTouchHelper.RecyclerItemTouchHelperListener {
+
+    private final static int LOCATION_PERMISSION_CODE = 4;
 
     ArrayList<Button> toDos;
     ButtonAdapter adapter;
@@ -53,13 +51,12 @@ public class MainActivity extends AppCompatActivity implements DownloadCallback<
     private Geofence geofence;
     private PendingIntent mGeofencePendingIntent;
 
-    @SuppressLint("MissingPermission")
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-        toDos = new ArrayList<Button>();//
+        toDos = new ArrayList<>();//
         mNetworkFragment = NetworkFragment.getInstance(getSupportFragmentManager(), DownloadParameters.url);
 
         Button toAdd = findViewById(R.id.addButton);
@@ -100,11 +97,15 @@ public class MainActivity extends AppCompatActivity implements DownloadCallback<
                 .setTransitionTypes(Geofence.GEOFENCE_TRANSITION_ENTER | Geofence.GEOFENCE_TRANSITION_EXIT)
                 .build();
 
+
+        if (ActivityCompat.checkSelfPermission(this, android.Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+            ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.ACCESS_FINE_LOCATION}, LOCATION_PERMISSION_CODE);
+        }
         mGeofencingClient.addGeofences(getGeofencingRequest(), getGeofencePendingIntent())
                 .addOnSuccessListener(this, new OnSuccessListener<Void>() {
                     @Override
                     public void onSuccess(Void aVoid) {
-
+                        Log.d("Success","Added Geofence");
                     }
                 })
                 .addOnFailureListener(this, new OnFailureListener() {
@@ -113,6 +114,7 @@ public class MainActivity extends AppCompatActivity implements DownloadCallback<
                         e.printStackTrace();
                     }
                 });
+        new GeofenceResultActor(this);
 
         doGet();
 
@@ -163,7 +165,7 @@ public class MainActivity extends AppCompatActivity implements DownloadCallback<
     @Override
     public void updateFromDownload(JSONObject result) {
         Iterator<String> keys = result.keys();
-        ArrayList<String> toDos = new ArrayList<String>();
+        ArrayList<String> toDos = new ArrayList<>();
         while (keys.hasNext())
         {
             String key = keys.next();
@@ -216,6 +218,7 @@ public class MainActivity extends AppCompatActivity implements DownloadCallback<
     public NetworkInfo getActiveNetworkInfo() {
         ConnectivityManager connectivityManager =
                 (ConnectivityManager) getSystemService(Context.CONNECTIVITY_SERVICE);
+        assert connectivityManager != null;
         return connectivityManager.getActiveNetworkInfo();
     }
 
@@ -267,9 +270,9 @@ public class MainActivity extends AppCompatActivity implements DownloadCallback<
     @Override
     public void onSwiped(RecyclerView.ViewHolder viewHolder, int direction, int position) {
         adapter.removeItem(viewHolder.getAdapterPosition());
-        ArrayList<String> toDelete = new ArrayList<String>();
+        ArrayList<String> toDelete = new ArrayList<>();
         toDelete.add((((Button) ((ButtonAdapter.ViewHolder) viewHolder).layout.getChildAt(0)).getText()).toString());
-        ArrayList<Boolean> trues = new ArrayList<Boolean>();
+        ArrayList<Boolean> trues = new ArrayList<>();
         trues.add(true);
         doDelete(toDelete, trues);
     }
@@ -287,10 +290,46 @@ public class MainActivity extends AppCompatActivity implements DownloadCallback<
             return mGeofencePendingIntent;
         }
         Intent intent = new Intent(this, GeofenceTransitionsIntentService.class);
+        GeofenceResultReceiver receiver = new GeofenceResultReceiver(new Handler());
+        receiver.setReceiver(new GeofenceResultActor(this));
+        intent.putExtra("receiver", receiver);
         mGeofencePendingIntent = PendingIntent.getService(this, 0, intent, PendingIntent.FLAG_UPDATE_CURRENT);
         return mGeofencePendingIntent;
     }
 
-    //TODO: Update from GPS
+    protected static class GeofenceResultActor implements GeofenceResultReceiver.GeofenceCallback
+    {
+
+        private WeakReference<MainActivity> thisReference;
+
+        GeofenceResultActor(MainActivity activity)
+        {
+            this.thisReference = new WeakReference<>(activity);
+        }
+
+        @Override
+        public void doJoin() {
+            ArrayList<String> joinKey = new ArrayList<>();
+            ArrayList<Boolean> joinVal = new ArrayList<>();
+            joinKey.add("join");
+            joinVal.add(true);
+            thisReference.get().doPost(joinKey, joinVal);
+        }
+
+        @Override
+        public void doLeave() {
+            ArrayList<String> leaveKey = new ArrayList<>();
+            ArrayList<Boolean> leaveVal = new ArrayList<>();
+            leaveKey.add("join");
+            leaveVal.add(true);
+            thisReference.get().doPost(leaveKey, leaveVal);
+        }
+
+        @Override
+        public void doWake() {
+            thisReference.get().doGet();
+        }
+    }
+
     //TODO: Fork to student-teacher versions
 }
