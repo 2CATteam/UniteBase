@@ -9,6 +9,7 @@ import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
 import android.os.Bundle;
 import android.os.Handler;
+import android.os.ResultReceiver;
 import android.support.annotation.NonNull;
 import android.support.v4.app.ActivityCompat;
 import android.support.v4.app.DialogFragment;
@@ -47,9 +48,9 @@ public class MainActivity extends AppCompatActivity implements DownloadCallback<
 
     private boolean mDownloading = false;
 
-    private GeofencingClient mGeofencingClient;
     private Geofence geofence;
     private PendingIntent mGeofencePendingIntent;
+    public static GeofenceResultReceiver mGeofenceResultReceiver;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -89,10 +90,11 @@ public class MainActivity extends AppCompatActivity implements DownloadCallback<
 
         FirebaseMessaging.getInstance().subscribeToTopic("student");
 
-        mGeofencingClient = LocationServices.getGeofencingClient(this);
+        mGeofenceResultReceiver = new GeofenceResultReceiver(this, new Handler());
+        GeofencingClient mGeofencingClient = LocationServices.getGeofencingClient(this);
         geofence = new Geofence.Builder()
                 .setRequestId("Tuttle")
-                .setCircularRegion(36.065261, -95.869564, 50)
+                .setCircularRegion(36.06517485, -95.869829, 100f)
                 .setExpirationDuration(Geofence.NEVER_EXPIRE)
                 .setTransitionTypes(Geofence.GEOFENCE_TRANSITION_ENTER | Geofence.GEOFENCE_TRANSITION_EXIT)
                 .build();
@@ -114,7 +116,6 @@ public class MainActivity extends AppCompatActivity implements DownloadCallback<
                         e.printStackTrace();
                     }
                 });
-        new GeofenceResultActor(this);
 
         doGet();
 
@@ -290,25 +291,55 @@ public class MainActivity extends AppCompatActivity implements DownloadCallback<
             return mGeofencePendingIntent;
         }
         Intent intent = new Intent(this, GeofenceTransitionsIntentService.class);
-        GeofenceResultReceiver receiver = new GeofenceResultReceiver(new Handler());
-        receiver.setReceiver(new GeofenceResultActor(this));
-        intent.putExtra("receiver", receiver);
+        //GeofenceResultReceiver receiver = new GeofenceResultReceiver(this, new Handler());
+        //receiver.setReceiver(new GeofenceResultActor(this));
+        //intent.putExtra("receiver", receiver);
+        /*Bundle addTo = intent.getExtras();
+        if (addTo != null) {
+            Log.d("Extras", "Full extra set!");
+            addTo.putParcelable("receiver", receiver);
+            intent.putExtras(addTo);
+        }
+        else {
+            Log.d("Extras", "Empty extra set!");
+            intent.putExtra("receiver", receiver);
+        }*/
         mGeofencePendingIntent = PendingIntent.getService(this, 0, intent, PendingIntent.FLAG_UPDATE_CURRENT);
         return mGeofencePendingIntent;
     }
 
-    protected static class GeofenceResultActor implements GeofenceResultReceiver.GeofenceCallback
+    protected static class GeofenceResultReceiver extends ResultReceiver
     {
+
+        public static final int WAKE_CODE = 1;
+        public static final int JOIN_CODE = 2;
+        public static final int LEAVE_CODE = 3;
 
         private WeakReference<MainActivity> thisReference;
 
-        GeofenceResultActor(MainActivity activity)
+        GeofenceResultReceiver(MainActivity activity, Handler handler)
         {
+            super(handler);
             this.thisReference = new WeakReference<>(activity);
         }
 
         @Override
-        public void doJoin() {
+        public void onReceiveResult(int resultCode, Bundle resultData)
+        {
+            switch (resultCode)
+            {
+                case WAKE_CODE:
+                    doWake();
+                    break;
+                case JOIN_CODE:
+                    doJoin();
+                    break;
+                case LEAVE_CODE:
+                    doLeave();
+            }
+        }
+
+        void doJoin() {
             ArrayList<String> joinKey = new ArrayList<>();
             ArrayList<Boolean> joinVal = new ArrayList<>();
             joinKey.add("join");
@@ -316,8 +347,8 @@ public class MainActivity extends AppCompatActivity implements DownloadCallback<
             thisReference.get().doPost(joinKey, joinVal);
         }
 
-        @Override
-        public void doLeave() {
+
+        void doLeave() {
             ArrayList<String> leaveKey = new ArrayList<>();
             ArrayList<Boolean> leaveVal = new ArrayList<>();
             leaveKey.add("join");
@@ -325,8 +356,7 @@ public class MainActivity extends AppCompatActivity implements DownloadCallback<
             thisReference.get().doPost(leaveKey, leaveVal);
         }
 
-        @Override
-        public void doWake() {
+        void doWake() {
             thisReference.get().doGet();
         }
     }
