@@ -27,7 +27,10 @@
             </intent-filter>
         </activity>
 
-        <service android:name="uniteapp.uniteclient.GeofenceTransitionsIntentService" />
+        <service
+            android:name="uniteapp.uniteclient.GeofenceTransitionsIntentService"
+            android:enabled="true"
+            android:exported="true" />
         <service
             android:name="uniteapp.uniteclient.notificationConn"
             android:enabled="true"

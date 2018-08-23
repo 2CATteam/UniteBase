@@ -1,6 +1,5 @@
 package uniteapp.uniteclient;
 
-import android.content.Context;
 import android.support.annotation.NonNull;
 import android.support.v7.widget.RecyclerView;
 import android.util.Log;
@@ -9,7 +8,6 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Button;
 import android.widget.LinearLayout;
-import android.widget.TextView;
 
 import java.util.ArrayList;
 
@@ -19,19 +17,20 @@ public class ButtonAdapter extends RecyclerView.Adapter<ButtonAdapter.ViewHolder
     public class ViewHolder extends RecyclerView.ViewHolder {
         public LinearLayout layout;
 
-        public ViewHolder(View view) {
+        ViewHolder(View view) {
             super(view);
             layout = view.findViewById(R.id.LinearLayout);
         }
     }
 
 
-    public ButtonAdapter(ArrayList<Button> toShow) {
+    ButtonAdapter(ArrayList<Button> toShow) {
         toDoList = toShow;
     }
 
+    @NonNull
     @Override
-    public ButtonAdapter.ViewHolder onCreateViewHolder(ViewGroup parent, int viewType)
+    public ButtonAdapter.ViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType)
     {
         View v = LayoutInflater.from(parent.getContext()).inflate(R.layout.todo_button_view, parent, false);
         return new ViewHolder(v);

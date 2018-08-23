@@ -8,7 +8,7 @@ public class DownloadParameters {
     private ArrayList<String> paramKeys;
     private ArrayList<Boolean> paramValues;
 
-    public DownloadParameters(String method, ArrayList<String> paramKeys, ArrayList<Boolean> paramValues)
+    DownloadParameters(String method, ArrayList<String> paramKeys, ArrayList<Boolean> paramValues)
     {
         this.method = method;
         this.paramKeys = paramKeys;

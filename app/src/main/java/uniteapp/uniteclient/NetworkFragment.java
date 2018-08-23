@@ -19,7 +19,6 @@ import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.io.OutputStreamWriter;
 import java.io.Reader;
-import java.io.UnsupportedEncodingException;
 import java.net.URL;
 
 import javax.net.ssl.HttpsURLConnection;
@@ -63,7 +62,7 @@ public class NetworkFragment extends Fragment {
     public void onAttach(Context context) {
         super.onAttach(context);
         // Host Activity will handle callbacks from task.
-        mCallback = (DownloadCallback) context;
+        mCallback = (DownloadCallback<JSONObject>) context;
     }
 
     @Override
@@ -104,7 +103,7 @@ public class NetworkFragment extends Fragment {
     /**
      * Implementation of AsyncTask designed to fetch data from the network.
      */
-    private class DownloadTask extends AsyncTask<DownloadParameters, Integer, DownloadTask.Result> {
+    private static class DownloadTask extends AsyncTask<DownloadParameters, Integer, DownloadTask.Result> {
 
         private DownloadCallback<JSONObject> mCallback;
 
@@ -156,7 +155,6 @@ public class NetworkFragment extends Fragment {
         protected DownloadTask.Result doInBackground(DownloadParameters... toDownload) {
             Result result = null;
             if (!isCancelled() && toDownload != null) {
-                String urlString = DownloadParameters.url;
                 try {
                     JSONObject resultObject = downloadUrl(toDownload[0]);
                     if (resultObject != null) {
@@ -245,7 +243,7 @@ public class NetworkFragment extends Fragment {
                 publishProgress(DownloadCallback.Progress.GET_INPUT_STREAM_SUCCESS, 0);
                 if (stream != null) {
                     // Converts Stream to String with max length of 500.
-                    result = readStream(stream, 10000);
+                    result = readStream(stream);
                 }
             } finally {
                 // Close Stream and disconnect HTTPS connection.
@@ -261,24 +259,24 @@ public class NetworkFragment extends Fragment {
         /**
          * Converts the contents of an InputStream to a String.
          */
-        JSONObject readStream(InputStream stream, int maxReadSize)
-                throws IOException, UnsupportedEncodingException {
+        JSONObject readStream(InputStream stream)
+                throws IOException {
+            int maxReadSize = 10000;
             Reader reader;
             reader = new InputStreamReader(stream, "UTF-8");
             char[] rawBuffer = new char[maxReadSize];
             int readSize;
-            StringBuffer buffer = new StringBuffer();
+            StringBuilder builder = new StringBuilder();
             while (((readSize = reader.read(rawBuffer)) != -1) && maxReadSize > 0) {
                 if (readSize > maxReadSize) {
                     readSize = maxReadSize;
                 }
-                buffer.append(rawBuffer, 0, readSize);
+                builder.append(rawBuffer, 0, readSize);
                 maxReadSize -= readSize;
             }
-            String toParse = buffer.toString();
+            String toParse = builder.toString();
             try {
-                JSONObject toReturn = new JSONObject(toParse);
-                return toReturn;
+                return new JSONObject(toParse);
             } catch (JSONException e) {
                 e.printStackTrace();
                 return null;

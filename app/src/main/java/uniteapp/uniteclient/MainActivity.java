@@ -8,8 +8,6 @@ import android.content.pm.PackageManager;
 import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
 import android.os.Bundle;
-import android.os.Handler;
-import android.os.ResultReceiver;
 import android.support.annotation.NonNull;
 import android.support.v4.app.ActivityCompat;
 import android.support.v4.app.DialogFragment;
@@ -33,7 +31,6 @@ import com.google.firebase.messaging.FirebaseMessaging;
 import org.json.JSONException;
 import org.json.JSONObject;
 
-import java.lang.ref.WeakReference;
 import java.util.ArrayList;
 import java.util.Iterator;
 
@@ -50,7 +47,6 @@ public class MainActivity extends AppCompatActivity implements DownloadCallback<
 
     private Geofence geofence;
     private PendingIntent mGeofencePendingIntent;
-    public static GeofenceResultReceiver mGeofenceResultReceiver;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -90,7 +86,6 @@ public class MainActivity extends AppCompatActivity implements DownloadCallback<
 
         FirebaseMessaging.getInstance().subscribeToTopic("student");
 
-        mGeofenceResultReceiver = new GeofenceResultReceiver(this, new Handler());
         GeofencingClient mGeofencingClient = LocationServices.getGeofencingClient(this);
         geofence = new Geofence.Builder()
                 .setRequestId("Tuttle")
@@ -118,20 +113,6 @@ public class MainActivity extends AppCompatActivity implements DownloadCallback<
                 });
 
         doGet();
-
-
-        //LinearLayout layout = findViewById(R.id.placeButtonsHere);
-        /* Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
-        setSupportActionBar(toolbar); */
-
-        /* FloatingActionButton fab = (FloatingActionButton) findViewById(R.id.fab);
-        fab.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                Snackbar.make(view, "Replace with your own action", Snackbar.LENGTH_LONG)
-                        .setAction("Action", null).show();
-            }
-        });*/
     }
 
     private void doGet() {
@@ -155,13 +136,15 @@ public class MainActivity extends AppCompatActivity implements DownloadCallback<
             mDownloading = true;
         }
     }
+    /*
     private void doPost(ArrayList<String> keys, ArrayList<Boolean> values) {
-        DownloadParameters toDo = new DownloadParameters("POST", keys, values);
+        DownloadParameters toDownload = new DownloadParameters("POST", keys, values);
         if (!mDownloading && mNetworkFragment != null) {
-            mNetworkFragment.startDownload(toDo, this);
+            mNetworkFragment.startDownload(toDownload, this);
             mDownloading = true;
         }
     }
+    */
 
     @Override
     public void updateFromDownload(JSONObject result) {
@@ -224,28 +207,6 @@ public class MainActivity extends AppCompatActivity implements DownloadCallback<
     }
 
     @Override
-    public void onProgressUpdate(int progressCode, int percentComplete) {
-        switch(progressCode) {
-            // You can add UI behavior for progress updates here.
-            case Progress.ERROR:
-
-                break;
-            case Progress.CONNECT_SUCCESS:
-
-                break;
-            case Progress.GET_INPUT_STREAM_SUCCESS:
-
-                break;
-            case Progress.PROCESS_INPUT_STREAM_IN_PROGRESS:
-
-                break;
-            case Progress.PROCESS_INPUT_STREAM_SUCCESS:
-
-                break;
-        }
-    }
-
-    @Override
     public void finishDownloading() {
         mDownloading = false;
         if (mNetworkFragment != null) {
@@ -291,74 +252,8 @@ public class MainActivity extends AppCompatActivity implements DownloadCallback<
             return mGeofencePendingIntent;
         }
         Intent intent = new Intent(this, GeofenceTransitionsIntentService.class);
-        //GeofenceResultReceiver receiver = new GeofenceResultReceiver(this, new Handler());
-        //receiver.setReceiver(new GeofenceResultActor(this));
-        //intent.putExtra("receiver", receiver);
-        /*Bundle addTo = intent.getExtras();
-        if (addTo != null) {
-            Log.d("Extras", "Full extra set!");
-            addTo.putParcelable("receiver", receiver);
-            intent.putExtras(addTo);
-        }
-        else {
-            Log.d("Extras", "Empty extra set!");
-            intent.putExtra("receiver", receiver);
-        }*/
         mGeofencePendingIntent = PendingIntent.getService(this, 0, intent, PendingIntent.FLAG_UPDATE_CURRENT);
         return mGeofencePendingIntent;
-    }
-
-    protected static class GeofenceResultReceiver extends ResultReceiver
-    {
-
-        public static final int WAKE_CODE = 1;
-        public static final int JOIN_CODE = 2;
-        public static final int LEAVE_CODE = 3;
-
-        private WeakReference<MainActivity> thisReference;
-
-        GeofenceResultReceiver(MainActivity activity, Handler handler)
-        {
-            super(handler);
-            this.thisReference = new WeakReference<>(activity);
-        }
-
-        @Override
-        public void onReceiveResult(int resultCode, Bundle resultData)
-        {
-            switch (resultCode)
-            {
-                case WAKE_CODE:
-                    doWake();
-                    break;
-                case JOIN_CODE:
-                    doJoin();
-                    break;
-                case LEAVE_CODE:
-                    doLeave();
-            }
-        }
-
-        void doJoin() {
-            ArrayList<String> joinKey = new ArrayList<>();
-            ArrayList<Boolean> joinVal = new ArrayList<>();
-            joinKey.add("join");
-            joinVal.add(true);
-            thisReference.get().doPost(joinKey, joinVal);
-        }
-
-
-        void doLeave() {
-            ArrayList<String> leaveKey = new ArrayList<>();
-            ArrayList<Boolean> leaveVal = new ArrayList<>();
-            leaveKey.add("join");
-            leaveVal.add(true);
-            thisReference.get().doPost(leaveKey, leaveVal);
-        }
-
-        void doWake() {
-            thisReference.get().doGet();
-        }
     }
 
     //TODO: Fork to student-teacher versions

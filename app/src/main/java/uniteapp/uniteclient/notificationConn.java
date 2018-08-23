@@ -54,6 +54,7 @@ public class notificationConn extends FirebaseMessagingService {
                 .setContentIntent(toReallyDo)
                 .build();
         toPost.flags |= Notification.FLAG_AUTO_CANCEL;
+        assert notif != null;
         notif.notify(0,toPost);
     }
 }
