@@ -19,6 +19,7 @@ import android.support.v7.widget.helper.ItemTouchHelper;
 import android.util.Log;
 import android.view.View;
 import android.widget.Button;
+import android.widget.Toast;
 
 import com.google.android.gms.location.Geofence;
 import com.google.android.gms.location.GeofencingClient;
@@ -86,33 +87,67 @@ public class MainActivity extends AppCompatActivity implements DownloadCallback<
 
         FirebaseMessaging.getInstance().subscribeToTopic("student");
 
+        if (ActivityCompat.checkSelfPermission(this, android.Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+            ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.ACCESS_FINE_LOCATION}, LOCATION_PERMISSION_CODE);
+        } else
+        {
+            setupGeofences();
+        }
+
+
+
+        doGet();
+    }
+
+    private void setupGeofences()
+    {
         GeofencingClient mGeofencingClient = LocationServices.getGeofencingClient(this);
         geofence = new Geofence.Builder()
                 .setRequestId("Tuttle")
-                .setCircularRegion(36.06517485, -95.869829, 100f)
+                .setCircularRegion(36.065134, -95.869640, 100f)
                 .setExpirationDuration(Geofence.NEVER_EXPIRE)
                 .setTransitionTypes(Geofence.GEOFENCE_TRANSITION_ENTER | Geofence.GEOFENCE_TRANSITION_EXIT)
                 .build();
 
-
-        if (ActivityCompat.checkSelfPermission(this, android.Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
-            ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.ACCESS_FINE_LOCATION}, LOCATION_PERMISSION_CODE);
+        try {
+            mGeofencingClient.addGeofences(getGeofencingRequest(), getGeofencePendingIntent())
+                    .addOnSuccessListener(this, new OnSuccessListener<Void>() {
+                        @Override
+                        public void onSuccess(Void aVoid) {
+                            Log.d("Success", "Added Geofence");
+                        }
+                    })
+                    .addOnFailureListener(this, new OnFailureListener() {
+                        @Override
+                        public void onFailure(@NonNull Exception e) {
+                            e.printStackTrace();
+                        }
+                    });
+        } catch (SecurityException e)
+        {
+            e.printStackTrace();
         }
-        mGeofencingClient.addGeofences(getGeofencingRequest(), getGeofencePendingIntent())
-                .addOnSuccessListener(this, new OnSuccessListener<Void>() {
-                    @Override
-                    public void onSuccess(Void aVoid) {
-                        Log.d("Success","Added Geofence");
-                    }
-                })
-                .addOnFailureListener(this, new OnFailureListener() {
-                    @Override
-                    public void onFailure(@NonNull Exception e) {
-                        e.printStackTrace();
-                    }
-                });
+    }
 
-        doGet();
+    @Override
+    public void onRequestPermissionsResult(int requestCode,
+                                           @NonNull String permissions[], @NonNull int[] grantResults) {
+        try {
+            if (grantResults[0] == PackageManager.PERMISSION_GRANTED)
+            {
+                setupGeofences();
+                Toast toShow = Toast.makeText(this, "Geofences setting up", Toast.LENGTH_SHORT);
+                toShow.show();
+            }
+            else {
+                Toast toShow = Toast.makeText(this, "Geofence Error... Please restart app", Toast.LENGTH_LONG);
+                toShow.show();
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+            Toast toShow = Toast.makeText(this, "Geofence Error... Please restart app", Toast.LENGTH_LONG);
+            toShow.show();
+        }
     }
 
     private void doGet() {

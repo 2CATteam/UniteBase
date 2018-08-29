@@ -14,6 +14,7 @@ import java.io.BufferedWriter;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.io.OutputStreamWriter;
+import java.net.SocketTimeoutException;
 import java.net.URL;
 import java.util.Timer;
 import java.util.TimerTask;
@@ -24,7 +25,6 @@ public class GeofenceTransitionsIntentService extends IntentService {
 
     public GeofenceTransitionsIntentService() {
         super("Geofence");
-
     }
 
     @Override
@@ -76,7 +76,7 @@ public class GeofenceTransitionsIntentService extends IntentService {
             // Timeout for connection.connect() arbitrarily set to 3000ms.
             connection.setConnectTimeout(3000);
             // For this use case, set HTTP method to GET.
-            connection.setRequestMethod("POST");
+            connection.setRequestMethod("GET");
             // Already true by default but setting just in case; needs to be true since this request
             // is carrying an input (response) body.
             connection.setDoInput(true);
@@ -122,9 +122,14 @@ public class GeofenceTransitionsIntentService extends IntentService {
             writeTo.close();
 
             connection.connect();
-            int responseCode = connection.getResponseCode();
-            if (responseCode != HttpsURLConnection.HTTP_OK) {
-                throw new IOException("HTTP error code: " + responseCode);
+            try {
+                int responseCode = connection.getResponseCode();
+                if (responseCode != HttpsURLConnection.HTTP_OK) {
+                    throw new IOException("HTTP error code: " + responseCode);
+                }
+            } catch(SocketTimeoutException e)
+            {
+                e.printStackTrace();
             }
         } catch (IOException | JSONException e) {
             e.printStackTrace();

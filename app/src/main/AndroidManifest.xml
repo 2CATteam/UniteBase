@@ -28,15 +28,20 @@
         </activity>
 
         <service
-            android:name="uniteapp.uniteclient.GeofenceTransitionsIntentService"
-            android:enabled="true"
-            android:exported="true" />
+            android:name="uniteapp.uniteclient.GeofenceTransitionsIntentService"/>
+            <!--android:enabled="true"-->
+            <!--android:exported="true"-->
+
         <service
             android:name="uniteapp.uniteclient.notificationConn"
             android:enabled="true"
             android:exported="true"><intent-filter>
             <action android:name="com.google.firebase.MESSAGING_EVENT"/>
         </intent-filter></service>
+
+        <meta-data
+            android:name="com.google.firebase.messaging.default_notification_icon"
+            android:resource="@drawable/union_alert_icon" />
     </application>
 
 </manifest>

@@ -48,7 +48,7 @@ public class notificationConn extends FirebaseMessagingService {
         PendingIntent toReallyDo = PendingIntent.getActivity(this, 0, toDo, 0);
         NotificationManager notif = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
         Notification toPost = new Notification.Builder(getApplicationContext())
-                .setContentTitle("Testing")
+                .setContentTitle("Unite Update")
                 .setContentText(toSend)
                 .setSmallIcon(R.drawable.union_alert_icon)
                 .setContentIntent(toReallyDo)
